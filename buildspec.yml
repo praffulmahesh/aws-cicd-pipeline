@@ -2,40 +2,30 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      docker: 20
     commands:
-      - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 992382459149.dkr.ecr.us-east-1.amazonaws.com
+      - echo Installing jq...
+      - apt-get update && apt-get install -y jq
 
   pre_build:
     commands:
-      - echo Setting IMAGE_TAG to short commit hash...
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - echo IMAGE_TAG=$IMAGE_TAG
-      - echo Building Docker image...
-      - docker build -t application:$IMAGE_TAG .
-      - docker tag application:$IMAGE_TAG 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
-      - echo Logging into Docker Hub...
-      - export DOCKER_USERNAME=$(aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query SecretString --output text | jq -r .username)
-      - export DOCKER_PASSWORD=$(aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query SecretString --output text | jq -r .password)
+      - echo Logging into DockerHub...
+      - export SECRET=$(aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query SecretString --output text)
+      - export DOCKER_USERNAME=$(echo $SECRET | jq -r .username)
+      - export DOCKER_PASSWORD=$(echo $SECRET | jq -r .password)
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-
-
 
   build:
     commands:
-      - echo Running unit tests using built Docker image...
-      - docker run --rm application:$IMAGE_TAG npm test
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t application:$IMAGE_TAG .
 
   post_build:
     commands:
-      - echo Pushing Docker image to ECR...
+      - echo Tagging and pushing Docker image to Amazon ECR...
+      - docker tag application:$IMAGE_TAG 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
+      - $(aws ecr get-login --no-include-email --region us-east-1)
       - docker push 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
-      - echo Writing imagedefinitions.json...
-      - printf '[{"name":"my-container","imageUri":"%s"}]' 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG > imagedefinitions.json
-
-artifacts:
-  files:
-    - imagedefinitions.json
-
-
+      - echo Build completed on `date`

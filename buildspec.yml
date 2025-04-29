@@ -14,6 +14,12 @@ phases:
       - echo Building Docker image...
       - docker build -t application:$IMAGE_TAG .
       - docker tag application:$IMAGE_TAG 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
+      - echo Logging into Docker Hub...
+      - export DOCKER_USERNAME=$(aws secretsmanager get-secret-value --secret-id <secret-name> --query SecretString --output text | jq -r .username)
+      - export DOCKER_PASSWORD=$(aws secretsmanager get-secret-value --secret-id <secret-name> --query SecretString --output text | jq -r .password)
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+
 
   build:
     commands:

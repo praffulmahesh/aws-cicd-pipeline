@@ -2,10 +2,8 @@ version: 0.2
 
 phases:
   install:
-    runtime-versions:
-      docker: 20
     commands:
-      - echo Installing jq...
+      - echo Installing dependencies...
       - apt-get update && apt-get install -y jq
 
   pre_build:
@@ -25,7 +23,7 @@ phases:
   post_build:
     commands:
       - echo Tagging and pushing Docker image to Amazon ECR...
-      - docker tag application:$IMAGE_TAG 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
       - $(aws ecr get-login --no-include-email --region us-east-1)
+      - docker tag application:$IMAGE_TAG 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
       - docker push 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
       - echo Build completed on `date`

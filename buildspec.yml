@@ -4,23 +4,23 @@ phases:
   install:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin <your_account_id>.dkr.ecr.$AWS_REGION.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 992382459149.dkr.ecr.$AWS_REGION.amazonaws.com
   pre_build:
     commands:
       - echo Building the Docker image...
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - docker build -t my-app:$IMAGE_TAG .
-      - docker tag my-app:$IMAGE_TAG <your_account_id>.dkr.ecr.$AWS_REGION.amazonaws.com/my-app:$IMAGE_TAG
+      - docker build -t application:$IMAGE_TAG .
+      - docker tag application:$IMAGE_TAG 992382459149.dkr.ecr.$AWS_REGION.amazonaws.com/application:$IMAGE_TAG
   build:
     commands:
       - echo Running unit tests...
-      - docker run --rm my-app:$IMAGE_TAG npm test
+      - docker run --rm application:$IMAGE_TAG npm test
   post_build:
     commands:
       - echo Pushing Docker image to ECR...
-      - docker push <your_account_id>.dkr.ecr.$AWS_REGION.amazonaws.com/my-app:$IMAGE_TAG
+      - docker push 992382459149.dkr.ecr.$AWS_REGION.amazonaws.com/application:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"my-container","imageUri":"%s"}]' <your_account_id>.dkr.ecr.$AWS_REGION.amazonaws.com/my-app:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"my-container","imageUri":"%s"}]' 992382459149.dkr.ecr.$AWS_REGION.amazonaws.com/application:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files:
     - imagedefinitions.json

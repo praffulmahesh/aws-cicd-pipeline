@@ -1,9 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    IMAGE_TAG: "latest"
-
 phases:
   install:
     commands:
@@ -12,22 +8,27 @@ phases:
 
   pre_build:
     commands:
-      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo Setting IMAGE_TAG to short commit hash...
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - echo IMAGE_TAG=$IMAGE_TAG
+      - echo Building Docker image...
+      - docker build -t application:$IMAGE_TAG .
+      - docker tag application:$IMAGE_TAG 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
 
   build:
     commands:
-      - echo Running unit tests...
+      - echo Running unit tests using built Docker image...
       - docker run --rm application:$IMAGE_TAG npm test
 
   post_build:
     commands:
       - echo Pushing Docker image to ECR...
       - docker push 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG
-      - echo Writing image definitions file...
+      - echo Writing imagedefinitions.json...
       - printf '[{"name":"my-container","imageUri":"%s"}]' 992382459149.dkr.ecr.us-east-1.amazonaws.com/application:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
   files:
     - imagedefinitions.json
+
 
